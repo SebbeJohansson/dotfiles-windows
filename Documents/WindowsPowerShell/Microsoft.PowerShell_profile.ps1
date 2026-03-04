@@ -2,50 +2,62 @@ Invoke-Expression (& { (zoxide init --cmd cd powershell | Out-String) })
 
 $Host.UI.RawUI.WindowTitle = $ExecutionContext.SessionState.Path.CurrentLocation
 
-# For wezterm
-function prompt {
-    # Get the name of the current folder only
-    $currentFolder = Split-Path -Leaf $ExecutionContext.SessionState.Path.CurrentLocation
-    
-    # If you are at the root (like C:\), Split-Path returns empty, so we handle that:
-    if ([string]::IsNullOrWhiteSpace($currentFolder)) { 
-        $currentFolder = $ExecutionContext.SessionState.Path.CurrentLocation 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+function Get-FolderName {
+    $p = $ExecutionContext.SessionState.Path.CurrentLocation
+    $leaf = Split-Path -Leaf $p
+    if ([string]::IsNullOrWhiteSpace($leaf)) { $leaf = $p }
+    return $leaf
+}
+
+function Set-TermTitle([string]$title) {
+    Write-Host -NoNewline "$([char]27)]2;$title$([char]7)"
+}
+
+function Set-Osc7 {
+    $p = $ExecutionContext.SessionState.Path.CurrentLocation.ProviderPath -replace '\\', '/'
+    Write-Host -NoNewline "$([char]27)]7;file://$($env:COMPUTERNAME)/$p$([char]27)\"
+}
+
+# ── Override PSConsoleHostReadLine to intercept commands ──────────────────────
+
+function global:PSConsoleHostReadLine {
+    # Read the command as normal
+    $input = [Microsoft.PowerShell.PSConsoleReadLine]::ReadLine(
+        $Host.Runspace, $ExecutionContext
+    )
+
+    # Set title to "Folder: command" right before execution
+    if (-not [string]::IsNullOrWhiteSpace($input)) {
+        Set-TermTitle "$(Get-FolderName): $($input.Trim())"
     }
 
-    # Set the WezTerm tab/window title to just that folder
-    $Host.UI.RawUI.WindowTitle = $currentFolder
-    
-    # Keep the actual command line prompt showing the full path (optional)
-    "PS $($ExecutionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedpromptlevel + 1)) "
+    return $input
 }
 
-function New-TabHere {
-    wt -w 0 new-tab -d .
+# ── Prompt — shown AFTER command finishes (idle state) ────────────────────────
+
+function prompt {
+    # Reset title to just folder name when idle
+    Set-TermTitle (Get-FolderName)
+    Set-Osc7
+
+    return "PS $($ExecutionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedpromptlevel + 1)) "
 }
-function OpenOpenCode {
-    wsl bash -i -c "opencode $Path"
-}
-function OpenOpenCodeWithGhostty {
-    ghost -cmd "opencode"
-}
+
+# ── Aliases & utilities ───────────────────────────────────────────────────────
+
+function New-TabHere { wezterm cli spawn --cwd . }
+function OpenOpenCodeWithGhostty { ghost -cmd "opencode" }
 function OpenGhostty {
     param([string]$cmd)
-
-    # 1. Convert the path
     $wslPath = wsl.exe wslpath $pwd.Path
-    
-    # 2. Build the launch argument
-    # We use --command= to ensure the entire string stays together
-    $args = "-e ghostty --working-directory=$wslPath"
-    
-    if ($cmd) {
-        # This tells Ghostty: run bash, find 'opencode', run it, then give me a prompt
-        $args += " --command=`"bash -i -c '$cmd; exec bash'`""
-    }
-
-    # 3. Launch
-    Start-Process "wsl.exe" -ArgumentList $args -WindowStyle Hidden
+    $a = "-e ghostty --working-directory=$wslPath"
+    if ($cmd) { $a += " --command=`"bash -i -c '$cmd; exec bash'`"" }
+    Start-Process "wsl.exe" -ArgumentList $a -WindowStyle Hidden
 }
+
 Set-Alias nt New-TabHere
 Set-Alias oc OpenOpenCodeWithGhostty
 Set-Alias ghost OpenGhostty

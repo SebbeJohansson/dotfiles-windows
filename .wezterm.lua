@@ -16,6 +16,7 @@ config.initial_rows = 28
 config.font_size = 10
 config.color_scheme = 'AdventureTime'
 
+-- Tab settings
 config.hide_tab_bar_if_only_one_tab = true
 config.use_fancy_tab_bar = true
 
