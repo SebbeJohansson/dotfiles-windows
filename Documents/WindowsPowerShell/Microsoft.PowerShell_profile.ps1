@@ -57,7 +57,16 @@ function OpenGhostty {
     if ($cmd) { $a += " --command=`"bash -i -c '$cmd; exec bash'`"" }
     Start-Process "wsl.exe" -ArgumentList $a -WindowStyle Hidden
 }
+function OpenWsl {
+    param([string]$cmd)
+    if ($cmd) {
+        wsl.exe --cd "$($pwd.Path)" -- bash -i -c "$cmd; exec bash"
+    } else {
+        wsl.exe --cd "$($pwd.Path)"
+    }
+}
 
 Set-Alias nt New-TabHere
 Set-Alias oc OpenOpenCodeWithGhostty
 Set-Alias ghost OpenGhostty
+Set-Alias owsl OpenWsl

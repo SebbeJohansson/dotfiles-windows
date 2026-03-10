@@ -1,0 +1,17 @@
+[user]
+	name = Dragon Sebastian Johansson
+	email = sebastian.johansson@revolutionrace.se
+[core]
+	autocrlf = true
+[difftool "sourcetree"]
+	cmd = "'' "
+[mergetool "sourcetree"]
+	cmd = "'' "
+	trustExitCode = false
+	keepBackup = false
+[alias]
+  cleanup = "!output=$(git fetch -p && git branch -vv | grep ': gone]' | grep -v '*' | awk '{ print $1 }' | xargs -r git branch -D) && if [[ -z \"$output\" ]]; then echo 'No unparented branches deleted'; else echo \"$output\"; fi"
+[credential "https://revolutionrace.ghe.com"]
+	provider = github
+[push]
+	autoSetupRemote = true
