@@ -2,7 +2,7 @@
 	name = Dragon Sebastian Johansson
 	email = sebastian.johansson@revolutionrace.se
 [core]
-	autocrlf = true
+	autocrlf = input
 [difftool "sourcetree"]
 	cmd = "'' "
 [mergetool "sourcetree"]
@@ -15,3 +15,5 @@
 	provider = github
 [push]
 	autoSetupRemote = true
+[safe]
+	directory = %(prefix)///wsl.localhost/Ubuntu/home/dragonsebastianjohan
