@@ -60,13 +60,54 @@ function OpenGhostty {
 function OpenWsl {
     param([string]$cmd)
     if ($cmd) {
-        wsl.exe --cd "$($pwd.Path)" -- bash -i -c "$cmd; exec bash"
+        wsl.exe --cd "$($pwd.Path)" -- bash -i -c "$cmd; exec `$SHELL"
     } else {
         wsl.exe --cd "$($pwd.Path)"
     }
 }
 
+function RunWsl {
+    param([string]$cmd)
+    wsl.exe --cd "$($pwd.Path)" -- bash -c "$cmd; exec `$SHELL"
+}
+
+# ── Wezterm Helpers ───────────────────────────────────────────────────────────
+
+function StartStorefront {
+	# cdsf
+	$cwd = (Get-Location).Path
+	$w = "wezterm"
+	$vimPane = $env:WEZTERM_PANE
+
+	function Send-Command($paneId, $cmd) {
+			& $w cli send-text --pane-id $paneId $cmd
+			& $w cli send-text --pane-id $paneId "`n"
+	}
+
+	# Send-Command $vimPane "vim ."
+
+	$yarnPane = & $w cli split-pane --pane-id $vimPane --right --cwd $cwd
+	Start-Sleep -Milliseconds 300
+	Send-Command $yarnPane "owsl yarn dev"
+
+	$proxyPane = & $w cli split-pane --pane-id $yarnPane --bottom --cwd $cwd
+	Start-Sleep -Milliseconds 300
+	Send-Command $proxyPane ".\proxy-win.ps1"
+
+	# $gitPane = & $w cli split-pane --pane-id $proxyPane --bottom --cwd $cwd
+	# Start-Sleep -Milliseconds 300
+	# Send-Command $gitPane "git status"
+
+	# & $w cli activate-pane --pane-id $vimPane
+}
+
+
 Set-Alias nt New-TabHere
 Set-Alias oc OpenOpenCodeWithGhostty
 Set-Alias ghost OpenGhostty
 Set-Alias owsl OpenWsl
+Set-Alias rwsl RunWsl
+Set-Alias sf StartStorefront
+# OPENSPEC:START - OpenSpec completion (managed block, do not edit manually)
+. "C:\Users\DragonSebastianJohan\Documents\PowerShell\OpenSpecCompletion.ps1"
+# OPENSPEC:END
